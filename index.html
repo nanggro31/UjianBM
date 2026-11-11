@@ -1971,5 +1971,74 @@ body::after{
       <div>© 2026 Hak Cipta Dilindungi. SMP & SMA Babul Maghfirah.</div>
       <div>Dibuat oleh Ust. Yulidatullah, S.Pd., Gr.</div>
   </div>
+
+  // 1. Inisialisasi Supabase Client
+const SUPABASE_URL = "https://gmvfdqdztjisbhqcbgnx.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_6d-oIu8CDU5xOscMC4hzBg_B2A-KKhE";
+const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+// 2. Fungsi Login dengan Notifikasi Error Detil
+async function handleLogin(e) {
+  e.preventDefault();
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value.trim();
+  const btn = document.getElementById('btnLogin');
+  
+  if (!supabase) {
+    showToast('Library Supabase gagal dimuat. Periksa koneksi internet.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = 'Memproses...';
+
+  try {
+    // Query data user dari Supabase
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', u)
+      .eq('password', p)
+      .maybeSingle();
+
+    btn.disabled = false;
+    btn.innerText = 'Masuk Sekarang';
+
+    if (error) {
+      showToast('Error Supabase: ' + error.message, 'error');
+      console.error('Login Error:', error);
+      return;
+    }
+
+    if (!data) {
+      showToast('Username atau Password salah / akun tidak ditemukan.', 'error');
+      return;
+    }
+
+    if (data.status !== 'Active') {
+      showToast('Akun Anda dalam status nonaktif.', 'error');
+      return;
+    }
+
+    // Jika berhasil
+    currentUser = {
+      id: data.user_id,
+      username: data.username,
+      role: (data.role || 'student').toLowerCase(),
+      name: data.name,
+      classId: data.class_id || ''
+    };
+    
+    sessionStorage.setItem('cbt_user_session', JSON.stringify(currentUser));
+    showToast('Login berhasil! Menyambungkan...');
+    initApp();
+
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerText = 'Masuk Sekarang';
+    showToast('Gagal terhubung ke database: ' + err.message, 'error');
+    console.error(err);
+  }
+}
 </body>
 </html>
